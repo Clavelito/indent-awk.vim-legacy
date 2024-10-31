@@ -1,8 +1,8 @@
 " Vim indent file
 " Language:        AWK Script
 " Author:          Clavelito <maromomo@hotmail.com>
-" Last Change:     Thu, 22 Dec 2022 23:06:27 +0900
-" Version:         2.4
+" Last Change:     Thu, 31 Oct 2024 19:27:40 +0900
+" Version:         2.5
 " License:         http://www.apache.org/licenses/LICENSE-2.0
 " Description:
 "                  let g:awk_indent_switch_labels = 0
@@ -157,6 +157,8 @@ function s:PrevLineIndent(line, lnum, sline, ind)
   elseif a:line =~# '^\s*\%(if\|while\)\s*(' && a:sline !~ '^\s*\%(&&\|||\)'
         \ && s:CleanPair(a:line, '(', ')') =~# '^\s*\%(if\|while\)\s*('
     let ind = s:StatContinueIndent(a:lnum, ind)
+  elseif a:line =~# '^\s*for\s*(.*;\s*$' && s:CleanPair(a:line, '(', ')') =~# '^\s*for\s*('
+    let ind = s:GetMatchWidth(a:line, a:lnum, '(\s*\zs\S')
   endif
   return ind
 endfunction
@@ -213,7 +215,8 @@ function s:JoinContinueLine(lnum, ...)
       continue
     endif
     let pline = s:HideStrComment(pline)
-    if !s:IsTailContinue(pline)
+    if line =~ ')' && s:PairBalance(line, ')', '(') > 0 && pline =~ ';\s*$'
+    elseif !s:IsTailContinue(pline)
       break
     endif
     let lnum = s:pn

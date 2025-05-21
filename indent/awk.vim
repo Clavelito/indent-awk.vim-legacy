@@ -1,8 +1,8 @@
 " Vim indent file
 " Language:        AWK Script
 " Author:          Clavelito <maromomo@hotmail.com>
-" Last Change:     Thu, 06 Feb 2025 14:47:39 +0900
-" Version:         2.6
+" Last Change:     Wed, 21 May 2025 16:57:35 +0900
+" Version:         2.7
 " License:         http://www.apache.org/licenses/LICENSE-2.0
 " Description:
 "                  let g:awk_indent_switch_labels = 0
@@ -257,7 +257,7 @@ function s:PreMorePrevLine(pline, pnum, line, lnum)
   if s:IsTailCloseBrace(line)
     let [line, lnum] = s:GetStartBraceLine(lnum, s:ms)
     let [line, lnum] = s:GetFrontOfBraceLine(line, lnum)
-  elseif line =~# '^\s*}\=\s*while\>' || line =~# '\S\s*[};]\s*while\>'
+  elseif line =~# '^\s*}\=\s*while\>'
     let [line, lnum] = s:GetDoLine(lnum)
   elseif line =~# '^\s*}\=\s*else\>'
     let [line, lnum] = s:GetIfLine(lnum)
@@ -360,9 +360,7 @@ function s:AvoidExpr(n)
   let pi = indent(a:n)
   let ci = indent('.')
   return ci > pi + shiftwidth() && head =~ '^\s*}\s*$' && g:awk_indent_curly_braces
-        \ || ci > pi && head =~ '^\s*}\s*$' && !g:awk_indent_curly_braces
-        \ || ci > pi && head =~ '^\s*$'
-        \ || ci < pi && head =~ '\S\s*[};]\s*$'
+        \ || ci > pi && head =~ '^\s*}\=\s*$' && !g:awk_indent_curly_braces
         \ || s:IsStrComment()
 endfunction
 

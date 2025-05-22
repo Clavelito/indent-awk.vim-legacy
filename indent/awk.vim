@@ -1,8 +1,8 @@
 " Vim indent file
 " Language:        AWK Script
 " Author:          Clavelito <maromomo@hotmail.com>
-" Last Change:     Wed, 21 May 2025 16:57:35 +0900
-" Version:         2.7
+" Last Change:     Thu, 22 May 2025 13:14:39 +0900
+" Version:         2.8
 " License:         http://www.apache.org/licenses/LICENSE-2.0
 " Description:
 "                  let g:awk_indent_switch_labels = 0
@@ -360,7 +360,8 @@ function s:AvoidExpr(n)
   let pi = indent(a:n)
   let ci = indent('.')
   return ci > pi + shiftwidth() && head =~ '^\s*}\s*$' && g:awk_indent_curly_braces
-        \ || ci > pi && head =~ '^\s*}\=\s*$' && !g:awk_indent_curly_braces
+        \ || ci > pi && head =~ '^\s*}\s*$' && !g:awk_indent_curly_braces
+        \ || ci > pi && head =~ '^\s*$'
         \ || s:IsStrComment()
 endfunction
 

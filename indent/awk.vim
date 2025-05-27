@@ -1,8 +1,8 @@
 " Vim indent file
 " Language:        AWK Script
 " Author:          Clavelito <maromomo@hotmail.com>
-" Last Change:     Fri, 23 May 2025 14:01:32 +0900
-" Version:         2.9
+" Last Change:     Tue, 27 May 2025 13:36:01 +0900
+" Version:         2.10
 " License:         http://www.apache.org/licenses/LICENSE-2.0
 " Description:
 "                  let g:awk_indent_switch_labels = 0
@@ -256,8 +256,7 @@ function s:PreMorePrevLine(pline, pnum, line, lnum)
   let lnum = a:lnum
   if s:IsTailCloseBrace(line)
     let [line, lnum] = s:GetStartBraceLine(lnum, s:ms)
-    let [line, lnum] = s:GetFrontOfBraceLine(line, lnum)
-  elseif line =~# '^\s*}\=\s*while\>' || line =~# '[^}[:blank:]]\s*;\s*while\>'
+  elseif line =~# '^\s*}\=\s*while\>'
     let [line, lnum] = s:GetDoLine(lnum)
   elseif line =~# '^\s*}\=\s*else\>'
     let [line, lnum] = s:GetIfLine(lnum)
@@ -286,18 +285,6 @@ function s:GetStartBraceLine(lnum, ...)
   else
     let line = ''
     let lnum = a:lnum
-  endif
-  return [line, lnum]
-endfunction
-
-function s:GetFrontOfBraceLine(line, lnum)
-  let line = a:line
-  let lnum = a:lnum
-  if line =~# '^\s*{'
-    let [pline, pnum] = s:JoinContinueLine(lnum)
-    if indent(pnum) <= indent(lnum) && pline =~# '^\s*do\s*$'
-      let [line, lnum] = [pline, pnum]
-    endif
   endif
   return [line, lnum]
 endfunction
@@ -340,31 +327,26 @@ function s:GetDoLine(lnum, ...)
 endfunction
 
 function s:SearchDoLoop(snum)
-  let lnum = 0
   let onum = 0
-  while search('\C^\s*do\>', 'ebW')
+  let rnum = 0
+  while search('\C^\s*do\>\ze\%(\_s*#.*\_$\)*\%(\_s*{\ze\)\=', 'ebW') > 0
+    let rnum += 1
     let pos = getpos('.')
-    let lnum = searchpair('\C\<do\>', '', '\C\<while\>', 'W', 's:AvoidExpr(pos[1])', a:snum)
+    let lnum = searchpair('\C\<do\>', '', '\C^\s*\zs\<while\>\|[};]\s*\zs\<while\>', 'W',
+          \ 's:IsStrComment() || indent(".")>indent(pos[1])', a:snum)
+    call setpos('.', pos)
     if lnum < onum || lnum < 1
       break
     elseif lnum == a:snum
-      let onum = pos[1]
+      if getline('.') =~# '^\s*do\>'
+        let onum = pos[1]
+      else
+        let onum = search('\C^\s*do\>', 'bW')
+      endif
+      break
     endif
-    call setpos('.', pos)
   endwhile
   return onum
-endfunction
-
-function s:AvoidExpr(n)
-  let head = strpart(getline('.'), 0, col('.') - 1)
-  let pi = indent(a:n)
-  let ci = indent('.')
-  return ci > pi + shiftwidth() && head =~ '^\s*}\s*$' && g:awk_indent_curly_braces
-        \ || ci > pi && head =~ '^\s*}\s*$' && !g:awk_indent_curly_braces
-        \ || ci > pi && head =~ '^\s*$'
-        \ || ci != pi && head =~# '^\s*do\>\%(.*\<while\>\)\@!'
-        \ || ci > pi + shiftwidth() && head =~ '[^}[:blank:]]\s*;\s*$'
-        \ || s:IsStrComment()
 endfunction
 
 function s:TailBslashIndent(l, i)
@@ -452,7 +434,7 @@ endfunction
 
 function s:IsTailCloseBrace(line)
   let s:ms = a:line =~ '\S\s*;\=\s*}' && s:PairBalance(a:line, '}', '{') > 0
-        \ ? matchend(a:line, '\S\%(\s*;\=\s*}\ze\%(\s*;\=\s*while\s*([^{};]\+)\)\=\)\+') : 0
+        \ ? matchend(a:line, '\S\%(\s*;\=\s*}\)\+') : 0
   return s:ms
 endfunction
 

@@ -1,8 +1,8 @@
 " Vim indent file
 " Language:        AWK Script
 " Author:          Clavelito <maromomo@hotmail.com>
-" Last Change:     Tue, 27 May 2025 13:36:01 +0900
-" Version:         2.10
+" Last Change:     Wed, 28 May 2025 13:32:18 +0900
+" Version:         2.11
 " License:         http://www.apache.org/licenses/LICENSE-2.0
 " Description:
 "                  let g:awk_indent_switch_labels = 0
@@ -328,9 +328,7 @@ endfunction
 
 function s:SearchDoLoop(snum)
   let onum = 0
-  let rnum = 0
   while search('\C^\s*do\>\ze\%(\_s*#.*\_$\)*\%(\_s*{\ze\)\=', 'ebW') > 0
-    let rnum += 1
     let pos = getpos('.')
     let lnum = searchpair('\C\<do\>', '', '\C^\s*\zs\<while\>\|[};]\s*\zs\<while\>', 'W',
           \ 's:IsStrComment() || indent(".")>indent(pos[1])', a:snum)

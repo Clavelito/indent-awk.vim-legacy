@@ -1,8 +1,8 @@
 " Vim indent file
 " Language:        AWK Script
 " Author:          Clavelito <maromomo@hotmail.com>
-" Last Change:     Wed, 28 May 2025 13:32:18 +0900
-" Version:         2.11
+" Last Change:     Sat, 31 May 2025 17:58:47 +0900
+" Version:         2.12
 " License:         http://www.apache.org/licenses/LICENSE-2.0
 " Description:
 "                  let g:awk_indent_switch_labels = 0
@@ -182,9 +182,10 @@ function s:CurrentLineIndent(cline, line, lnum, pline, pnum, ind)
         \ || s:IsTailCloseBrace(a:pline)
         \ && s:GetStartBraceLine(a:pnum, s:ms)[0] =~# '^\s*case\>'))
     let ind -= shiftwidth()
-  elseif a:cline =~ '^\s*{\s*\%(#.*\)\=$'
+  elseif a:cline =~ '^\s*{'
         \ && (a:line =~ '\\$'
         \ || !g:awk_indent_curly_braces
+        \ && s:UnclosedPair(s:HideStrComment(a:cline), '{', '}')
         \ && ((a:line =~# '^\s*\%(if\|}\=\s*else\s\+if\|for\)\s*(.*)\s*$'
         \ || a:line =~# '^\s*while\s*(.*)\s*$' && !s:GetDoLine(a:lnum, 1)
         \ || a:line =~# '^\s*switch\s*(.*)\s*$' && s:IsOptSwitchEnable())
@@ -290,7 +291,8 @@ function s:GetStartBraceLine(lnum, ...)
 endfunction
 
 function s:GetIfLine(lnum, ...)
-  if a:0 && a:1 =~# '^\s*\%(}\|if\>\|else\>\|{\s*\%(#.*\)\=$\)'
+  if a:0 && (a:1 =~# '^\s*\%(}\|if\>\|else\>\)'
+        \ || a:1 =~ '^\s*{' && s:UnclosedPair(s:HideStrComment(a:1), '{', '}'))
     let expr = 'indent(".") > indent(a:lnum)'
   elseif a:0
     let expr = 'indent(".") >= indent(a:lnum)'

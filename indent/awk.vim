@@ -1,8 +1,8 @@
 " Vim indent file
 " Language:        AWK Script
 " Author:          Clavelito <maromomo@hotmail.com>
-" Last Change:     Sat, 31 May 2025 17:58:47 +0900
-" Version:         2.12
+" Last Change:     Thu, 10 Jul 2025 09:05:42 +0900
+" Version:         2.13
 " License:         http://www.apache.org/licenses/LICENSE-2.0
 " Description:
 "                  let g:awk_indent_switch_labels = 0
@@ -209,6 +209,9 @@ endfunction
 
 function s:JoinContinueLine(lnum, ...)
   let [line, lnum] = a:0 ? [a:1, a:lnum] : s:SkipCommentLine(a:lnum)
+  if s:IsTailContinue(line) && (!a:0 || getline(v:lnum) !~ '^\s*{' && !s:PairBalance(line, ')', '('))
+    return [line, lnum]
+  endif
   let s:pn = lnum
   while s:PrevNonBlank(s:pn)
     let pline = getline(s:pn)
@@ -264,7 +267,8 @@ function s:PreMorePrevLine(pline, pnum, line, lnum)
   elseif line =~ '^\s\+}'
     let [line, lnum] = s:GetStartBraceLine(lnum)
   endif
-  if line =~# '^\s*do\>' && !s:GetDoLine(a:lnum, lnum == a:lnum ? 0 : 1)
+  let line = s:HideStrComment(line)
+  if line =~# '^\s*do\>\%(.*[};]\s*while\s*(\)\@!' && !s:GetDoLine(a:lnum, lnum == a:lnum ? 0 : 1)
     let pnum = 0
   elseif lnum != a:lnum
     let [pline, pnum] = s:JoinContinueLine(lnum)
@@ -279,7 +283,7 @@ function s:GetStartBraceLine(lnum, ...)
   let lnum = searchpair('{', '', '}', 'bW', 's:IsStrComment()')
   call setpos('.', pos)
   if lnum > 0
-    let [line, lnum] = s:JoinContinueLine(lnum, getline(lnum))
+    let [line, lnum] = s:JoinContinueLine(lnum, s:HideStrComment(getline(lnum)))
     if lnum > 0 && a:0 < 2 && line =~# '^\s*}\=\s*else\>'
       let [line, lnum] = s:GetIfLine(lnum)
     endif
@@ -317,7 +321,7 @@ endfunction
 function s:GetDoLine(lnum, ...)
   let pos = getpos('.')
   call cursor(a:0 && !a:1 ? 0 : a:lnum, 1)
-  let lnum = s:SearchDoLoop(a:lnum)
+  let lnum = s:SearchDo(a:lnum)
   call setpos('.', pos)
   if lnum
     let line = getline(lnum)
@@ -328,24 +332,22 @@ function s:GetDoLine(lnum, ...)
   return a:0 ? lnum : [line, lnum]
 endfunction
 
-function s:SearchDoLoop(snum)
+function s:SearchDo(snum)
   let onum = 0
-  while search('\C^\s*do\>\ze\%(\_s*#.*\_$\)*\%(\_s*{\ze\)\=', 'ebW') > 0
-    let pos = getpos('.')
-    let lnum = searchpair('\C\<do\>', '', '\C^\s*\zs\<while\>\|[};]\s*\zs\<while\>', 'W',
-          \ 's:IsStrComment() || indent(".")>indent(pos[1])', a:snum)
-    call setpos('.', pos)
-    if lnum < onum || lnum < 1
-      break
-    elseif lnum == a:snum
-      if getline('.') =~# '^\s*do\>'
-        let onum = pos[1]
-      else
-        let onum = search('\C^\s*do\>', 'bW')
-      endif
-      break
+  if search('\C^\s*\zs\<do\>', 'bW', 0, 0, 'indent(".") > indent(a:snum)') > 0
+        \ && s:HideStrComment(getline('.')) =~# '^\s*do\>\%(.*[};]\s*while\s*(\)\@!'
+    let dnum = line('.')
+    if g:awk_indent_curly_braces && search('\C\<do\>\ze\%(\_s*#.*\_$\)*\%(\_s*{\ze\)\=', 'ceW') > 0
+      let bnum = line('.')
+    else
+      let bnum = dnum
     endif
-  endwhile
+    let lnum = searchpair('\C^\s*\zs\<do\>', '', '\C^\s*}\=\s*\zs\<while\>',
+          \ 'W', 'indent(".") > indent(bnum)', a:snum)
+    if lnum == a:snum
+      let onum = dnum
+    endif
+  endif
   return onum
 endfunction
 

@@ -1,8 +1,8 @@
 " Vim indent file
 " Language:        AWK Script
 " Author:          Clavelito <maromomo@hotmail.com>
-" Last Change:     Thu, 10 Jul 2025 09:05:42 +0900
-" Version:         2.13
+" Last Change:     Sun, 21 Dec 2025 16:14:27 +0900
+" Version:         2.14
 " License:         http://www.apache.org/licenses/LICENSE-2.0
 " Description:
 "                  let g:awk_indent_switch_labels = 0
@@ -334,8 +334,18 @@ endfunction
 
 function s:SearchDo(snum)
   let onum = 0
-  if search('\C^\s*\zs\<do\>', 'bW', 0, 0, 'indent(".") > indent(a:snum)') > 0
-        \ && s:HideStrComment(getline('.')) =~# '^\s*do\>\%(.*[};]\s*while\s*(\)\@!'
+  let flag = 0
+  let sind = indent(a:snum)
+  while search('\C^\s*\zs\<do\>', 'bW') > 0
+    if indent('.') > sind
+      continue
+    endif
+    if s:HideStrComment(getline('.')) =~# '^\s*do\>\%(.*[};]\s*while\s*(\)\@!'
+      let flag = 1
+    endif
+    break
+  endwhile
+  if flag
     let dnum = line('.')
     if g:awk_indent_curly_braces && search('\C\<do\>\ze\%(\_s*#.*\_$\)*\%(\_s*{\ze\)\=', 'ceW') > 0
       let bnum = line('.')

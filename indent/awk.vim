@@ -1,8 +1,8 @@
 " Vim indent file
 " Language:        AWK Script
 " Author:          Clavelito <maromomo@hotmail.com>
-" Last Change:     Wed, 17 Jun 2026 09:55:00 +0900
-" Version:         2.15
+" Last Change:     Sun, 05 Jul 2026 08:02:30 +0900
+" Version:         2.16
 " License:         http://www.apache.org/licenses/LICENSE-2.0
 " Description:
 "                  let g:awk_indent_switch_labels = 0
@@ -97,6 +97,8 @@ function s:ContinueLineIndent(lnum, cline)
   elseif line =~ '\]' && s:PairBalance(line, '\]', '\[') > 0
         \ && s:IsTailContinue(line) && s:IsTailContinue(pline)
     let ind = s:NestContinueIndent(line, lnum, a:cline, '\[', '\]')
+  elseif line =~# '^\s*for\s*(.*;\s*$' && s:UnclosedPair(line, '(', ')')
+    let ind = s:GetMatchWidth(line, lnum, '(\s*\zs\S')
   elseif line =~ '(' && s:IsTailContinue(line) && s:UnclosedPair(line, '(', ')')
     let ind = s:OpenParenIndent(line, lnum, a:cline)
   elseif line =~ '\[.*\%(\\\|,\s*\)$' && s:UnclosedPair(line, '\[', '\]')
@@ -125,7 +127,7 @@ function s:ContinueLineIndent(lnum, cline)
 endfunction
 
 function s:MorePrevLineIndent(pline, pnum, line, lnum, ind)
-  if s:IsTailContinue(a:line)
+  if s:IsTailContinue(a:line) || s:PairBalance(a:line, '(', ')')
     return a:ind
   endif
   let [pline, pnum, ind] = s:PreMorePrevLine(a:pline, a:pnum, a:line, a:lnum)
@@ -160,8 +162,6 @@ function s:PrevLineIndent(line, lnum, sline, ind)
   elseif a:line =~# '^\s*\%(if\|while\)\s*(' && a:sline !~ '^\s*\%(&&\|||\)'
         \ && s:CleanPair(a:line, '(', ')') =~# '^\s*\%(if\|while\)\s*('
     let ind = s:StatContinueIndent(a:lnum, ind)
-  elseif a:line =~# '^\s*for\s*(.*\%(;\|\<in\)\s*$' && s:CleanPair(a:line, '(', ')') =~# '^\s*for\s*('
-    let ind = s:GetMatchWidth(a:line, a:lnum, '(\s*\zs\S')
   endif
   return ind
 endfunction
